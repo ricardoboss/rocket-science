@@ -1,34 +1,37 @@
 <template>
-    <v-stage id="main_stage" ref="main_stage" :config="configKonva" @resize="resizeCanvas">
+    <v-stage id="main_stage" :config="configKonva" @resize="resizeCanvas">
+      <v-layer ref="path_layer">
+        <v-line :config="{points: path_marks, stroke: 'white', strokeWidth: 1, opacity: 0.05}"></v-line>
+      </v-layer>
       <v-layer>
-        <v-ellipse :config="orbitConfig"></v-ellipse>
         <v-circle :config="planetConfig"></v-circle>
       </v-layer>
-      <v-layer ref="path_layer">
-        <v-line :config="{points: path_marks, stroke: 'white', strokeWidth: 1, opacity: 0.02}"></v-line>
-      </v-layer>
       <v-layer>
-        <v-arrow :config="rocketConfig"></v-arrow>
+        <v-arrow :config="gravityVectorConfig"></v-arrow>
         <v-arrow :config="rocketVectorConfig"></v-arrow>
+        <v-arrow :config="rocketConfig"></v-arrow>
       </v-layer>
       <v-layer>
-        <v-text :config="{x: 10, y: 10, fill: 'white', text: `pos: x: ${this.rocketPosition.x.toFixed(2)} y: ${this.rocketPosition.y.toFixed(2)} phi: ${this.rocketPosition.phi.toFixed(2)}`}"></v-text>
-        <v-text :config="{x: 10, y: 25, fill: 'white', text: `vel: x: ${this.rocketVelocity.x.toFixed(2)} y: ${this.rocketVelocity.y.toFixed(2)} phi: ${this.rocketVelocity.phi.toFixed(2)}`}"></v-text>
-        <v-text :config="{x: 10, y: 40, fill: 'white', text: `distance: ${this.distanceBetweenCenters.toFixed(2)}`}"></v-text>
-        <v-text :config="{x: 10, y: 55, fill: 'white', text: `boosting: ${this.boost ? 'yes' : 'no'}`}"></v-text>
-        <v-text :config="{x: 10, y: 70, fill: 'white', text: `tracking trajectory: ${this.track_path === true ? 'yes' : (this.track_path === false ? 'yes (reversed)' : 'no')}`}"></v-text>
-      </v-layer>
-      <v-layer>
-        <v-text :config="{x: 10, y: this.configKonva.height - 20, fill: 'white', text: `Space - toggle tracking direction`}"></v-text>
-        <v-text :config="{x: 10, y: this.configKonva.height - 35, fill: 'white', text: `F - toggle tracking trajectory`}"></v-text>
-        <v-text :config="{x: 10, y: this.configKonva.height - 50, fill: 'white', text: `S - slow down spin`}"></v-text>
-        <v-text :config="{x: 10, y: this.configKonva.height - 65, fill: 'white', text: `A/D - spin left/right`}"></v-text>
-        <v-text :config="{x: 10, y: this.configKonva.height - 80, fill: 'white', text: `W - boost`}"></v-text>
-      </v-layer>
-      <v-layer>
-        <v-circle :config="{x: this.configKonva.width / 2, y: this.configKonva.height - 50, radius: 50, fill: 'black', stroke: 'white', strokeWidth: 1}"></v-circle>
-        <v-arrow :config="previewRocketConfig"></v-arrow>
-        <v-arrow :config="previewRocketVectorConfig"></v-arrow>
+        <v-group>
+          <v-text :config="{x: 10, y: 10, fill: 'white', text: `pos: x: ${this.rocketPosition.x.toFixed(2)} y: ${this.rocketPosition.y.toFixed(2)} phi: ${this.rocketPosition.phi.toFixed(2)}`}"></v-text>
+          <v-text :config="{x: 10, y: 25, fill: 'white', text: `vel: x: ${this.rocketVelocity.x.toFixed(2)} y: ${this.rocketVelocity.y.toFixed(2)} phi: ${this.rocketVelocity.phi.toFixed(2)}`}"></v-text>
+          <v-text :config="{x: 10, y: 40, fill: 'white', text: `distance: ${(this.distanceBetweenCenters - this.planetRadius - this.rocketRadius / 2).toFixed(2)}`}"></v-text>
+          <v-text :config="{x: 10, y: 55, fill: 'white', text: `boosting: ${this.boost ? 'yes' : 'no'}`}"></v-text>
+          <v-text :config="{x: 10, y: 70, fill: 'white', text: `tracking trajectory: ${this.track_path === true ? 'yes' : (this.track_path === false ? 'yes (reversed)' : 'no')}`}"></v-text>
+        </v-group>
+        <v-group>
+          <v-text :config="{x: 10, y: this.configKonva.height - 20, fill: 'white', text: `Space - toggle tracking direction`}"></v-text>
+          <v-text :config="{x: 10, y: this.configKonva.height - 35, fill: 'white', text: `F - toggle tracking trajectory`}"></v-text>
+          <v-text :config="{x: 10, y: this.configKonva.height - 50, fill: 'white', text: `S - slow down spin`}"></v-text>
+          <v-text :config="{x: 10, y: this.configKonva.height - 65, fill: 'white', text: `A/D - spin left/right`}"></v-text>
+          <v-text :config="{x: 10, y: this.configKonva.height - 80, fill: 'white', text: `W - boost`}"></v-text>
+        </v-group>
+        <v-group>
+          <v-circle :config="{x: this.configKonva.width / 2, y: this.configKonva.height - 50, radius: 50, fill: 'black', stroke: 'white', strokeWidth: 1}"></v-circle>
+          <v-arrow :config="previewPlanetVectorConfig"></v-arrow>
+          <v-arrow :config="previewRocketVectorConfig"></v-arrow>
+          <v-arrow :config="previewRocketConfig"></v-arrow>
+        </v-group>
       </v-layer>
     </v-stage>
 </template>
@@ -37,11 +40,16 @@
 const degToRad = Math.PI / 180;
 const bigG = 6.6742;
 
-const planetRadius = 75;
-const planetMass = 10;
-const rocketRadius = 5;
+export const planetRadius = 100;
+const planetMass = 10000;
+export const rocketRadius = 5;
 const rocketMass = 0.1;
-const launchSpeed = 6;
+const launchFactor = 5;
+const thrustFactor = 0.02;
+const surfaceTolerance = 0.1;
+const frictionFactor = 1 - 0.000001;
+
+const pathMaxPoints = 10000;
 
 export default {
   name: "Game",
@@ -63,7 +71,7 @@ export default {
   mounted() {
     this.resizeCanvas();
 
-    this.gameTickInterval = setInterval(() => this.gameTick(), 10)
+    this.gameTickInterval = setInterval(() => this.gameTick(), 20)
   },
 
   data() {
@@ -73,6 +81,8 @@ export default {
       resizeTrigger: false,
 
       planetRotation: 0,
+      planetRadius,
+      rocketRadius,
 
       rocketLanded: true,
       rocketLandingOffset: 0,
@@ -92,21 +102,14 @@ export default {
         x: 0,
         y: 0
       },
+      gravity: {
+        x: 0,
+        y: 0
+      },
 
       boost: false,
       rotate: null,
       track_path: null,
-
-      orbit: {
-        center: {
-          x: 0,
-          y: 0
-        },
-        radius: {
-          x: 0,
-          y: 0
-        }
-      },
 
       path_marks: []
     };
@@ -120,8 +123,7 @@ export default {
       this.planetToRocket.x = (this.rocketPosition.x - this.planetConfig.x) / this.distanceBetweenCenters;
       this.planetToRocket.y = (this.rocketPosition.y - this.planetConfig.y) / this.distanceBetweenCenters;
 
-      let distanceToSurface = this.distanceBetweenCenters - (rocketRadius / 2 + planetRadius / 2);
-      if (distanceToSurface < rocketRadius) {
+      if (this.distanceBetweenCenters < rocketRadius / 2 + planetRadius - surfaceTolerance) {
         this.rocketLanded = true;
 
         this.rocketLandingOffset = this.planetRotation;
@@ -130,10 +132,7 @@ export default {
       if (this.rocketLanded) {
         this.rocketPosition.x = this.planetConfig.x + Math.cos((this.planetRotation + this.rocketLandingOffset) * degToRad) * (planetRadius + rocketRadius / 2);
         this.rocketPosition.y = this.planetConfig.y + Math.sin((this.planetRotation + this.rocketLandingOffset) * degToRad) * (planetRadius + rocketRadius / 2);
-        this.rocketPosition.phi = this.planetRotation + this.rocketLandingOffset;
-
-        this.orbit.radius.x = planetRadius + rocketRadius / 2;
-        this.orbit.radius.y = planetRadius + rocketRadius / 2;
+        this.rocketPosition.phi = (this.planetRotation + this.rocketLandingOffset) % 360;
 
         this.rocketVelocity.x = 0;
         this.rocketVelocity.y = 0;
@@ -141,11 +140,9 @@ export default {
       } else {
         if (this.boost)
         {
-          let thrust_factor = 0.003;
-
           let thrust = {
-            x: Math.cos(this.rocketPosition.phi * degToRad) * thrust_factor,
-            y: Math.sin(this.rocketPosition.phi * degToRad) * thrust_factor
+            x: Math.cos(this.rocketPosition.phi * degToRad) * thrustFactor,
+            y: Math.sin(this.rocketPosition.phi * degToRad) * thrustFactor
           };
 
           this.rocketVelocity.x += thrust.x;
@@ -159,15 +156,16 @@ export default {
         else if (this.rotate === 0)
           this.rocketVelocity.phi *= 0.99;
 
-        let gravitationalForce = bigG * (planetMass * rocketMass) / distanceToSurface;
-        let gravity = {
-          x: gravitationalForce * this.planetToRocket.x,
-          y: gravitationalForce * this.planetToRocket.y
-        }
+        let gravitationalForce = bigG * (planetMass * rocketMass) / Math.pow(this.distanceBetweenCenters, 2);
+        this.gravity.x = gravitationalForce * this.planetToRocket.x;
+        this.gravity.y = gravitationalForce * this.planetToRocket.y;
 
-        this.rocketVelocity.x -= gravity.x;
-        this.rocketVelocity.y -= gravity.y;
+        this.rocketVelocity.x -= this.gravity.x;
+        this.rocketVelocity.y -= this.gravity.y;
         this.rocketVelocity.phi %= 360;
+
+        this.rocketVelocity.x *= frictionFactor;
+        this.rocketVelocity.y *= frictionFactor;
 
         this.rocketPosition.x += this.rocketVelocity.x;
         this.rocketPosition.y += this.rocketVelocity.y;
@@ -181,35 +179,35 @@ export default {
         }
         this.rocketPosition.phi %= 360;
 
-        this.orbit.radius.x = this.distanceBetweenCenters;
-        this.orbit.radius.y = this.distanceBetweenCenters;
-      }
+        this.path_marks.push(this.rocketPosition.x);
+        this.path_marks.push(this.rocketPosition.y);
+        if (this.path_marks.length > pathMaxPoints)
+          this.path_marks.splice(0, 2);
 
-      this.path_marks.push(this.rocketPosition.x);
-      this.path_marks.push(this.rocketPosition.y);
-      this.$refs.path_layer.getNode().draw();
+        this.$refs.path_layer.getNode().draw();
+      }
     },
 
     resizeCanvas() {
       // toggle the boolean to trigger computed values to re-compute
       this.resizeTrigger = !this.resizeTrigger;
-
-      this.orbit.center.x = this.planetConfig.x;
-      this.orbit.center.y = this.planetConfig.y;
     },
 
     keydown(e) {
       switch (e.keyCode)
       {
         case 87: // w
+          this.boost = true;
+
           if (this.rocketLanded) {
             this.rocketLanded = false;
+            this.track_path = true;
 
-            this.rocketVelocity.x = this.planetToRocket.x * launchSpeed;
-            this.rocketVelocity.y = this.planetToRocket.y * launchSpeed;
+            // orient tangential to surface
             this.rocketPosition.phi = this.planetRotation + 90;
-          } else {
-            this.boost = true;
+
+            this.rocketVelocity.x = (this.planetToRocket.x + Math.cos(this.rocketPosition.phi * degToRad)) * launchFactor;
+            this.rocketVelocity.y = (this.planetToRocket.y + Math.sin(this.rocketPosition.phi * degToRad)) * launchFactor;
           }
           break;
         case 65: // a
@@ -305,8 +303,8 @@ export default {
     rocketVectorConfig() {
       return {
         points: [
+          this.rocketVelocity.x * 2, this.rocketVelocity.y * 2,
           this.rocketVelocity.x * 5, this.rocketVelocity.y * 5,
-          this.rocketVelocity.x * 10, this.rocketVelocity.y * 10,
         ],
         x: this.rocketPosition.x,
         y: this.rocketPosition.y,
@@ -314,6 +312,7 @@ export default {
         stroke: 'red',
         pointerWidth: 3,
         pointerLength: 3,
+        visible: this.rocketVelocity.x !== 0 && this.rocketVelocity.y !== 0,
       }
     },
 
@@ -329,20 +328,40 @@ export default {
         stroke: 'red',
         pointerWidth: 3,
         pointerLength: 3,
+        visible: this.rocketVelocity.x !== 0 && this.rocketVelocity.y !== 0,
       }
     },
 
-    orbitConfig() {
+    gravityVectorConfig() {
       return {
-        radius: {
-          x: this.orbit.radius.x,
-          y: this.orbit.radius.y,
-        },
-        x: this.orbit.center.x,
-        y: this.orbit.center.y,
-        stroke: 'gray',
-        strokeWidth: 0.25,
-        fillEnabled: false,
+        points: [
+          -this.planetToRocket.x * 5, -this.planetToRocket.y * 5,
+          -this.planetToRocket.x * 10, -this.planetToRocket.y * 10
+        ],
+        x: this.rocketPosition.x,
+        y: this.rocketPosition.y,
+        fill: 'blue',
+        stroke: 'blue',
+        pointerWidth: 3,
+        pointerLength: 3,
+        visible: this.planetToRocket.x !== 0 && this.planetToRocket.y !== 0,
+      }
+    },
+
+    previewPlanetVectorConfig()
+    {
+      return {
+        points: [
+          0,0,
+          -this.planetToRocket.x * 50, -this.planetToRocket.y * 50
+        ],
+        x: this.configKonva.width / 2,
+        y: this.configKonva.height - 50,
+        fill: 'blue',
+        stroke: 'blue',
+        strokeWidth: 0,
+        pointerWidth: 6,
+        pointerLength: 6,
       }
     },
   }
