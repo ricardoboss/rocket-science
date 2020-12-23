@@ -19,6 +19,13 @@
         <v-text :config="{x: 10, y: 70, fill: 'white', text: `tracking trajectory: ${this.track_path === true ? 'yes' : (this.track_path === false ? 'yes (reversed)' : 'no')}`}"></v-text>
       </v-layer>
       <v-layer>
+        <v-text :config="{x: 10, y: this.configKonva.height - 20, fill: 'white', text: `Space - toggle tracking direction`}"></v-text>
+        <v-text :config="{x: 10, y: this.configKonva.height - 35, fill: 'white', text: `F - toggle tracking trajectory`}"></v-text>
+        <v-text :config="{x: 10, y: this.configKonva.height - 50, fill: 'white', text: `S - slow down spin`}"></v-text>
+        <v-text :config="{x: 10, y: this.configKonva.height - 65, fill: 'white', text: `A/D - spin left/right`}"></v-text>
+        <v-text :config="{x: 10, y: this.configKonva.height - 80, fill: 'white', text: `W - boost`}"></v-text>
+      </v-layer>
+      <v-layer>
         <v-circle :config="{x: this.configKonva.width / 2, y: this.configKonva.height - 50, radius: 50, fill: 'black', stroke: 'white', strokeWidth: 1}"></v-circle>
         <v-arrow :config="previewRocketConfig"></v-arrow>
         <v-arrow :config="previewRocketVectorConfig"></v-arrow>
